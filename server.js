@@ -49,6 +49,14 @@ var options = { format: 'A4' };
 //SEND PDF INVOICE VIA EMAIL
 app.post('/send-pdf', (req, res) => {
   const { email, company } = req.body;
+
+  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
+    if (err) {
+      res.send(Promise.reject());
+    } else {
+      res.send(Promise.resolve());
+    }
+  });
   // send mail with defined transport object
 
   transporter.sendMail({
