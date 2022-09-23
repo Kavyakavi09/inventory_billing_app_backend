@@ -74,8 +74,9 @@ app.post('/send-pdf', (req, res) => {
 
     if (err) {
       res.send(Promise.reject());
+    } else {
+      res.send(Promise.resolve());
     }
-    res.send(Promise.resolve());
   });
 });
 
@@ -84,8 +85,9 @@ app.post('/create-pdf', (req, res) => {
   pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
     if (err) {
       res.send(Promise.reject());
+    } else {
+      res.send(Promise.resolve());
     }
-    res.send(Promise.resolve());
   });
 });
 
