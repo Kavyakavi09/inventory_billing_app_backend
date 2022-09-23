@@ -157,7 +157,7 @@ hr {
           <img class="footer-logo" src="https://i.postimg.cc/hGZKzdkS/logo.png" alt="arc-invoice"/>
         </a>
       </div>
-    <p style="text-align: center">Make beautiful invoice for free at <a href="https://invoicybilly.netlify.app" target=_blank></a>/</p>
+    <p style="text-align: center">Make beautiful invoice for free at https://invoicybilly.netlify.app </p>
     </div>
     </body>
 </html>`;

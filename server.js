@@ -50,33 +50,31 @@ var options = { format: 'A4' };
 app.post('/send-pdf', (req, res) => {
   const { email, company } = req.body;
 
-  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
-    if (err) {
-      res.send(Promise.reject());
-    } else {
+  pdf
+    .create(pdfTemplate(req.body), options)
+    .toFile('invoice.pdf')
+    .then((result) => {
+      transporter.sendMail({
+        from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
+        to: `${email}`, // list of receivers
+        replyTo: `${company.email}`,
+        subject: `Invoice from ${
+          company.businessName ? company.businessName : company.name
+        }`, // Subject line
+        text: `Invoice from ${
+          company.businessName ? company.businessName : company.name
+        }`, // plain text body
+        html: emailTemplate(req.body), // html body
+        attachments: [
+          {
+            filename: 'invoice.pdf',
+            path: `${__dirname}/invoice.pdf`,
+          },
+        ],
+      });
       res.send(Promise.resolve());
-    }
-  });
-  // send mail with defined transport object
-
-  transporter.sendMail({
-    from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
-    to: `${email}`, // list of receivers
-    replyTo: `${company.email}`,
-    subject: `Invoice from ${
-      company.businessName ? company.businessName : company.name
-    }`, // Subject line
-    text: `Invoice from ${
-      company.businessName ? company.businessName : company.name
-    }`, // plain text body
-    html: emailTemplate(req.body), // html body
-    attachments: [
-      {
-        filename: 'invoice.pdf',
-        path: `${__dirname}/invoice.pdf`,
-      },
-    ],
-  });
+    })
+    .catch((err) => res.send(Promise.reject()));
 });
 
 //CREATE AND SEND PDF INVOICE
