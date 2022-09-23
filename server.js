@@ -1,0 +1,112 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import connect from './db/connectDb.js';
+import nodemailer from 'nodemailer';
+import userRoutes from './routes/userRoutes.js';
+import invoiceRoutes from './routes/invoices.js';
+import clientRoutes from './routes/clients.js';
+import profile from './routes/profile.js';
+import pdfTemplate from './documents/index.js';
+import emailTemplate from './documents/email.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import pdf from 'html-pdf';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// web server
+const app = express();
+app.use(
+  cors({
+    origin: '*',
+    credentials: true,
+  })
+);
+
+// dotenv environment setup
+dotenv.config();
+
+// middlewares
+
+app.use(express.json({ limit: '30mb', extended: true }));
+
+app.use('/invoices', invoiceRoutes);
+app.use('/clients', clientRoutes);
+app.use('/users', userRoutes);
+app.use('/profiles', profile);
+
+// NODEMAILER TRANSPORT FOR SENDING INVOICE VIA EMAIL
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
+var options = { format: 'A4' };
+//SEND PDF INVOICE VIA EMAIL
+app.post('/send-pdf', (req, res) => {
+  const { email, company } = req.body;
+
+  // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
+  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
+    // send mail with defined transport object
+    transporter.sendMail({
+      from: ` Invoicy <hello@invoice.com>`, // sender address
+      to: `${email}`, // list of receivers
+      replyTo: `${company.email}`,
+      subject: `Invoice from ${
+        company.businessName ? company.businessName : company.name
+      }`, // Subject line
+      text: `Invoice from ${
+        company.businessName ? company.businessName : company.name
+      }`, // plain text body
+      html: emailTemplate(req.body), // html body
+      attachments: [
+        {
+          filename: 'invoice.pdf',
+          path: `${__dirname}/invoice.pdf`,
+        },
+      ],
+    });
+
+    if (err) {
+      res.send(Promise.reject());
+    }
+    res.send(Promise.resolve());
+  });
+});
+
+//CREATE AND SEND PDF INVOICE
+app.post('/create-pdf', (req, res) => {
+  pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
+    if (err) {
+      res.send(Promise.reject());
+    }
+    res.send(Promise.resolve());
+  });
+});
+
+//SEND PDF INVOICE
+app.get('/fetch-pdf', (req, res) => {
+  res.sendFile(`${__dirname}/invoice.pdf`);
+});
+
+app.get('/', (req, res) => {
+  res.send('SERVER IS RUNNING');
+});
+
+let port = process.env.PORT || 4000;
+
+app.listen(port, () => {
+  console.log(`The App is running on the port ${port}!`);
+  // connect to the database
+  connect();
+});
