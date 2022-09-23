@@ -18,11 +18,7 @@ const __dirname = dirname(__filename);
 
 // web server
 const app = express();
-app.use(
-  cors({
-    origin: '*',
-  })
-);
+app.use(cors());
 
 // dotenv environment setup
 dotenv.config();
@@ -55,33 +51,25 @@ app.post('/send-pdf', (req, res) => {
   const { email, company } = req.body;
 
   // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
-  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      // send mail with defined transport object
-      transporter
-        .sendMail({
-          from: ` Accountill <hello@accountill.com>`, // sender address
-          to: `${email}`, // list of receivers
-          replyTo: `${company.email}`,
-          subject: `Invoice from ${
-            company.businessName ? company.businessName : company.name
-          }`, // Subject line
-          text: `Invoice from ${
-            company.businessName ? company.businessName : company.name
-          }`, // plain text body
-          html: emailTemplate(req.body), // html body
-          attachments: [
-            {
-              filename: 'invoice.pdf',
-              path: `${__dirname}/invoice.pdf`,
-            },
-          ],
-        })
-        .then((res) => res.send(Promise.resolve()))
-        .catch((err) => res.send(Promise.reject()));
-    }
+
+  // send mail with defined transport object
+  transporter.sendMail({
+    from: ` Accountill <hello@accountill.com>`, // sender address
+    to: `${email}`, // list of receivers
+    replyTo: `${company.email}`,
+    subject: `Invoice from ${
+      company.businessName ? company.businessName : company.name
+    }`, // Subject line
+    text: `Invoice from ${
+      company.businessName ? company.businessName : company.name
+    }`, // plain text body
+    html: emailTemplate(req.body), // html body
+    attachments: [
+      {
+        filename: 'invoice.pdf',
+        path: `${__dirname}/invoice.pdf`,
+      },
+    ],
   });
 });
 
