@@ -52,11 +52,12 @@ const transporter = nodemailer.createTransport({
 
 var options = { format: 'A4' };
 //SEND PDF INVOICE VIA EMAIL
-app.post('/send-pdf', (req, res) => {
+app.post('/send-pdf', async (req, res) => {
   const { email, company } = req.body;
 
-  // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
-  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
+  try {
+    // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
+    await pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf');
     // send mail with defined transport object
     transporter.sendMail({
       from: ` Invoicy <hello@invoice.com>`, // sender address
@@ -76,13 +77,10 @@ app.post('/send-pdf', (req, res) => {
         },
       ],
     });
-
-    if (err) {
-      res.send(Promise.reject());
-    } else {
-      res.send(Promise.resolve());
-    }
-  });
+    res.send(Promise.resolve());
+  } catch (error) {
+    res.send(Promise.reject());
+  }
 });
 
 //CREATE AND SEND PDF INVOICE
