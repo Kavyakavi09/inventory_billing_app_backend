@@ -52,35 +52,37 @@ const transporter = nodemailer.createTransport({
 
 var options = { format: 'A4' };
 //SEND PDF INVOICE VIA EMAIL
-app.post('/send-pdf', async (req, res) => {
+app.post('/send-pdf', (req, res) => {
   const { email, company } = req.body;
 
-  try {
-    // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
-    await pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf');
-    // send mail with defined transport object
-    transporter.sendMail({
-      from: ` Invoicy <hello@invoice.com>`, // sender address
-      to: `${email}`, // list of receivers
-      replyTo: `${company.email}`,
-      subject: `Invoice from ${
-        company.businessName ? company.businessName : company.name
-      }`, // Subject line
-      text: `Invoice from ${
-        company.businessName ? company.businessName : company.name
-      }`, // plain text body
-      html: emailTemplate(req.body), // html body
-      attachments: [
-        {
-          filename: 'invoice.pdf',
-          path: `${__dirname}/invoice.pdf`,
-        },
-      ],
-    });
-    res.send(Promise.resolve());
-  } catch (error) {
-    res.send(Promise.reject());
-  }
+  // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
+  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
+    if (err) {
+      res.send(Promise.reject());
+    } else {
+      // send mail with defined transport object
+      transporter.sendMail({
+        from: ` Accountill <hello@accountill.com>`, // sender address
+        to: `${email}`, // list of receivers
+        replyTo: `${company.email}`,
+        subject: `Invoice from ${
+          company.businessName ? company.businessName : company.name
+        }`, // Subject line
+        text: `Invoice from ${
+          company.businessName ? company.businessName : company.name
+        }`, // plain text body
+        html: emailTemplate(req.body), // html body
+        attachments: [
+          {
+            filename: 'invoice.pdf',
+            path: `${__dirname}/invoice.pdf`,
+          },
+        ],
+      });
+
+      res.send(Promise.resolve());
+    }
+  });
 });
 
 //CREATE AND SEND PDF INVOICE
