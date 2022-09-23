@@ -52,29 +52,33 @@ app.post('/send-pdf', (req, res) => {
 
   pdf
     .create(pdfTemplate(req.body), options)
-    .toFile('invoice.pdf', () => {
-      transporter.sendMail({
-        from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
-        to: `${email}`, // list of receivers
-        replyTo: `${company.email}`,
-        subject: `Invoice from ${
-          company.businessName ? company.businessName : company.name
-        }`, // Subject line
-        text: `Invoice from ${
-          company.businessName ? company.businessName : company.name
-        }`, // plain text body
-        html: emailTemplate(req.body), // html body
-        attachments: [
-          {
-            filename: 'invoice.pdf',
-            path: `${__dirname}/invoice.pdf`,
-          },
-        ],
-      });
-    })
-    .then(() =>
-      res.send(Promise.resolve()).catch(() => res.send(Promise.reject()))
-    );
+    .toFile('invoice.pdf', (err, result) => {
+      if (err) {
+        res.send(Promise.reject());
+      }
+      if (result) {
+        transporter
+          .sendMail({
+            from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
+            to: `${email}`, // list of receivers
+            replyTo: `${company.email}`,
+            subject: `Invoice from ${
+              company.businessName ? company.businessName : company.name
+            }`, // Subject line
+            text: `Invoice from ${
+              company.businessName ? company.businessName : company.name
+            }`, // plain text body
+            html: emailTemplate(req.body), // html body
+            attachments: [
+              {
+                filename: 'invoice.pdf',
+                path: `${__dirname}/invoice.pdf`,
+              },
+            ],
+          })
+          .then(() => res.send(Promise.resolve()));
+      }
+    });
 });
 
 //CREATE AND SEND PDF INVOICE
