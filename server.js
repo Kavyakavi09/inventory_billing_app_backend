@@ -51,7 +51,7 @@ app.post('/send-pdf', (req, res) => {
   const { email, company } = req.body;
   // send mail with defined transport object
 
-  pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
+  pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
     if (err) {
       res.send(Promise.reject());
     } else {
