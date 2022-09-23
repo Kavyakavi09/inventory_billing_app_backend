@@ -18,12 +18,7 @@ const __dirname = dirname(__filename);
 
 // web server
 const app = express();
-app.use(
-  cors({
-    origin: '*',
-    credentials: true,
-  })
-);
+app.use(cors());
 
 // dotenv environment setup
 dotenv.config();
