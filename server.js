@@ -20,7 +20,7 @@ const __dirname = dirname(__filename);
 const app = express();
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'https://invoicybilly.netlify.app'],
+    origin: '*',
     credentials: true,
   })
 );
