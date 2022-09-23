@@ -52,8 +52,7 @@ app.post('/send-pdf', (req, res) => {
 
   pdf
     .create(pdfTemplate(req.body), options)
-    .toFile('invoice.pdf')
-    .then((result) => {
+    .toFile('invoice.pdf', () => {
       transporter.sendMail({
         from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
         to: `${email}`, // list of receivers
@@ -72,9 +71,10 @@ app.post('/send-pdf', (req, res) => {
           },
         ],
       });
-      res.send(Promise.resolve());
     })
-    .catch((err) => res.send(Promise.reject()));
+    .then(() =>
+      res.send(Promise.resolve()).catch(() => res.send(Promise.reject()))
+    );
 });
 
 //CREATE AND SEND PDF INVOICE
