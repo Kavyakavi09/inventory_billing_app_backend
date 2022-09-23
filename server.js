@@ -18,7 +18,12 @@ const __dirname = dirname(__filename);
 
 // web server
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'https://invoicybilly.netlify.app'],
+    credentials: true,
+  })
+);
 
 // dotenv environment setup
 dotenv.config();
