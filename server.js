@@ -75,6 +75,7 @@ app.post('/send-pdf', async (req, res) => {
         console.log(err);
       } else {
         console.log('Mail has been sent', info.response);
+        res.status(200).json({ message: 'Mail has been sent successfully' });
       }
     });
   } catch (error) {
