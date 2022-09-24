@@ -40,7 +40,9 @@ app.post('/send-pdf', async (req, res) => {
   const { email, company } = req.body;
 
   try {
-    pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf');
+    pdf
+      .create(pdfTemplate(req.body), options)
+      .toFile('invoice.pdf', (err) => console.log(err));
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
