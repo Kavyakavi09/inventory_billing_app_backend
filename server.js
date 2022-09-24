@@ -40,44 +40,47 @@ app.post('/send-pdf', async (req, res) => {
   const { email, company } = req.body;
 
   try {
-    pdf
-      .create(pdfTemplate(req.body), options)
-      .toFile('invoice.pdf', (err) => console.log(err));
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-
-    const mail = {
-      from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
-      to: `${email}`, // list of receivers
-      replyTo: `${company.email}`,
-      subject: `Invoice from ${
-        company.businessName ? company.businessName : company.name
-      }`, // Subject line
-      text: `Invoice from ${
-        company.businessName ? company.businessName : company.name
-      }`, // plain text body
-      html: emailTemplate(req.body), // html body
-      attachments: [
-        {
-          filename: 'invoice.pdf',
-          path: `${__dirname}/invoice.pdf`,
-        },
-      ],
-    };
-    transporter.sendMail(mail, (err, info) => {
+    pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {
       if (err) {
         console.log(err);
       } else {
-        console.log('Mail has been sent', info.response);
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+          tls: {
+            rejectUnauthorized: false,
+          },
+        });
+
+        const mail = {
+          from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
+          to: `${email}`, // list of receivers
+          replyTo: `${company.email}`,
+          subject: `Invoice from ${
+            company.businessName ? company.businessName : company.name
+          }`, // Subject line
+          text: `Invoice from ${
+            company.businessName ? company.businessName : company.name
+          }`, // plain text body
+          html: emailTemplate(req.body), // html body
+          attachments: [
+            {
+              filename: 'invoice.pdf',
+              path: `${__dirname}/invoice.pdf`,
+            },
+          ],
+        };
+        transporter.sendMail(mail, (err, info) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log('Mail has been sent', info.response);
+          }
+        });
       }
     });
   } catch (error) {
