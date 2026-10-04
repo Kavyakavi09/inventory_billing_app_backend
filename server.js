@@ -1,6 +1,8 @@
+// Load env vars first: some modules (e.g. middleware/auth.js) read
+// process.env at import time, so this must run before them.
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import connect from './db/connectDb.js';
 import nodemailer from 'nodemailer';
 import userRoutes from './routes/userRoutes.js';
@@ -18,10 +20,18 @@ const __dirname = dirname(__filename);
 
 // web server
 const app = express();
-app.use(cors());
 
-// dotenv environment setup
-dotenv.config();
+// CORS_ORIGIN can be a comma-separated list of allowed origins.
+// If it is not set, all origins are allowed (fine for local development only).
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : '*';
+app.use(cors({ origin: allowedOrigins }));
+
+// Health check for Docker, load balancers (ALB) and Kubernetes probes
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
 
 // middlewares
 
@@ -34,12 +44,29 @@ app.use('/profiles', profile);
 
 // NODEMAILER TRANSPORT FOR SENDING INVOICE VIA EMAIL
 
-var options = { format: 'A4' };
+// Render the invoice to a PDF buffer in memory (nothing is written to disk,
+// so concurrent requests and multiple containers cannot overwrite each other).
+const createPdfBuffer = (data) =>
+  new Promise((resolve, reject) => {
+    pdf
+      .create(pdfTemplate(data), { format: 'A4' })
+      .toBuffer((err, buffer) => (err ? reject(err) : resolve(buffer)));
+  });
+
 //SEND PDF INVOICE VIA EMAIL
 app.post('/send-pdf', async (req, res) => {
   const { email, company } = req.body;
 
+  // The sender's business profile (Settings page) is required for the email
+  if (!company) {
+    return res.status(400).json({
+      message: 'Business profile not found. Please fill in Settings first.',
+    });
+  }
+
   try {
+    const pdfBuffer = await createPdfBuffer(req.body);
+
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -53,7 +80,8 @@ app.post('/send-pdf', async (req, res) => {
     });
 
     const mail = {
-      from: `Invoicybilly <hello@invoicybilly.com>`, // sender address
+      // MAIL_FROM can override the sender; Gmail/SES only allow addresses you own
+      from: process.env.MAIL_FROM || `Invoicybilly <${process.env.SMTP_USER}>`,
       to: `${email}`, // list of receivers
       replyTo: `${company.email}`,
       subject: `Invoice from ${
@@ -66,37 +94,40 @@ app.post('/send-pdf', async (req, res) => {
       attachments: [
         {
           filename: 'invoice.pdf',
-          path: `${__dirname}/invoice.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
         },
       ],
     };
     transporter.sendMail(mail, (err, info) => {
       if (err) {
         console.log(err);
-      } else {
-        console.log('Mail has been sent', info.response);
-        res.status(200).json({ message: 'Mail has been sent successfully' });
+        return res
+          .status(500)
+          .json({ message: 'Failed to send email', error: err.message });
       }
+      console.log('Mail has been sent', info.response);
+      res.status(200).json({ message: 'Mail has been sent successfully' });
     });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: 'Failed to send email' });
   }
 });
 
-//CREATE AND SEND PDF INVOICE
-app.post('/create-pdf', (req, res) => {
-  pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {
-    if (err) {
-      res.send(Promise.reject());
-    } else {
-      res.send(Promise.resolve());
-    }
-  });
-});
-
-//SEND PDF INVOICE
-app.get('/fetch-pdf', (req, res) => {
-  res.sendFile(`${__dirname}/invoice.pdf`);
+//CREATE PDF INVOICE AND RETURN IT DIRECTLY (used by the Download button)
+app.post('/create-pdf', async (req, res) => {
+  try {
+    const pdfBuffer = await createPdfBuffer(req.body);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="invoice.pdf"',
+    });
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Failed to create PDF' });
+  }
 });
 
 app.get('/', (req, res) => {
