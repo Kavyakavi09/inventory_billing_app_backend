@@ -67,9 +67,19 @@ app.post('/send-pdf', async (req, res) => {
   try {
     const pdfBuffer = await createPdfBuffer(req.body);
 
+    const smtpPort = Number(process.env.SMTP_PORT) || 587;
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
+      port: smtpPort,
+      // 465 = implicit TLS; 587 = STARTTLS (nodemailer upgrades automatically)
+      secure: smtpPort === 465,
+      // Force IPv4: hosts like Render often cannot reach Gmail over IPv6,
+      // which shows up as intermittent "ETIMEDOUT / CONN" errors.
+      family: 4,
+      // Fail fast with a clear error instead of hanging the request
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
