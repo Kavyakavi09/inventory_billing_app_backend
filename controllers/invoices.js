@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 
 import InvoiceModel from '../models/InvoiceModel.js';
+import { publishInvoiceJob } from '../queues/invoiceQueue.js';
+import { invalidateUserCache } from '../services/cache.js';
 
 export const getInvoicesByUser = async (req, res) => {
   const { searchQuery } = req.query;
@@ -46,6 +48,7 @@ export const createInvoice = async (req, res) => {
 
   try {
     await newInvoice.save();
+    await publishInvoiceJob(newInvoice._id.toString(), 'upsert');
     res.status(201).json(newInvoice);
   } catch (error) {
     res.status(409).json(error.message);
@@ -77,6 +80,7 @@ export const updateInvoice = async (req, res) => {
     { new: true }
   );
 
+  await publishInvoiceJob(_id, 'upsert');
   res.json(updatedInvoice);
 };
 
@@ -86,7 +90,12 @@ export const deleteInvoice = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(id))
     return res.status(404).send('No invoice with that id');
 
+  const existing = await InvoiceModel.findById(id);
   await InvoiceModel.findByIdAndRemove(id);
+  await publishInvoiceJob(id, 'delete');
+  for (const userId of existing?.creator || []) {
+    await invalidateUserCache(userId);
+  }
 
   res.json({ message: 'Invoice deleted successfully' });
 };

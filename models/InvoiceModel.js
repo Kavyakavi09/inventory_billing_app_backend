@@ -30,7 +30,12 @@ const InvoiceSchema = mongoose.Schema({
     type: Date,
     default: new Date(),
   },
+  searchText: { type: String, default: '' },
+  indexedAt: { type: Date, default: null },
+  noteEmbedding: { type: [Number] },
 });
+
+InvoiceSchema.index({ searchText: 'text', notes: 'text' });
 
 const InvoiceModel = mongoose.model('InvoiceModel', InvoiceSchema);
 export default InvoiceModel;

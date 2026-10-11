@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes.js';
 import invoiceRoutes from './routes/invoices.js';
 import clientRoutes from './routes/clients.js';
 import profile from './routes/profile.js';
+import assistantRoutes from './routes/assistant.js';
 import pdfTemplate from './documents/index.js';
 import emailTemplate from './documents/email.js';
 import { fileURLToPath } from 'url';
@@ -41,6 +42,7 @@ app.use('/invoices', invoiceRoutes);
 app.use('/clients', clientRoutes);
 app.use('/users', userRoutes);
 app.use('/profiles', profile);
+app.use('/assistant', assistantRoutes);
 
 // NODEMAILER TRANSPORT FOR SENDING INVOICE VIA EMAIL
 
